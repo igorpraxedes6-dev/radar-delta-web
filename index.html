@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de Funding</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141922; --panel2:#0f141c; --border:#232a36;
+    --text:#e6edf3; --muted:#8b98a9; --green:#3fb950; --red:#f85149;
+    --gold:#e3b341; --accent:#2f81f7; --hot:#f78166;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#121826,#0b0e14);position:sticky;top:0;z-index:10}
+  .logo{font-weight:700;font-size:17px;letter-spacing:.3px}
+  .logo span{color:var(--gold)}
+  .pulse{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(63,185,80,.6);
+    animation:p 2s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(63,185,80,.5)}70%{box-shadow:0 0 0 8px rgba(63,185,80,0)}100%{box-shadow:0 0 0 0 rgba(63,185,80,0)}}
+  .status{margin-left:auto;color:var(--muted);font-size:12px;text-align:right;line-height:1.5}
+  .chlink{margin-left:16px;background:var(--accent);color:#fff;text-decoration:none;padding:6px 12px;
+    border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .chlink:hover{filter:brightness(1.12)}
+  .tabs{display:flex;gap:4px;padding:10px 20px 0}
+  .tab{padding:8px 16px;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;
+    background:var(--panel2);color:var(--muted);cursor:pointer;font-size:13px}
+  .tab.active{background:var(--panel);color:var(--text);font-weight:600}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:end;padding:14px 20px;background:var(--panel);
+    border:1px solid var(--border);margin:0 20px;border-radius:0 8px 8px 8px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .ctl input,.ctl select{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:7px 10px;border-radius:6px;font-size:13px;width:130px}
+  .ctl input[type=checkbox]{width:auto}
+  .alertbox{margin-left:auto;display:flex;gap:16px;align-items:end;padding:10px 14px;
+    border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+  .alertbox .ttl{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .wrap{padding:16px 20px 60px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;padding:10px 14px;border-bottom:1px solid var(--border);position:sticky;top:64px;background:var(--bg)}
+  th.l,td.l{text-align:left}
+  td{padding:11px 14px;border-bottom:1px solid #1a212c}
+  tr:hover td{background:#131a24}
+  .rank{color:var(--muted);width:30px}
+  .pair{font-weight:600}
+  .exch{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
+  .exch.binance{background:#2b2410;color:var(--gold)}
+  .exch.bybit{background:#101f2b;color:var(--accent)}
+  .pos{color:var(--green)}.neg{color:var(--red)}
+  .apr{font-weight:700;font-size:14px}
+  .hot{color:var(--hot)!important}
+  .be-fast{color:var(--green)}.be-slow{color:var(--muted)}
+  .flash{animation:fl 1.2s ease-out}
+  @keyframes fl{0%{background:rgba(227,179,65,.25)}100%{background:transparent}}
+  .empty{text-align:center;color:var(--muted);padding:40px}
+  .legend{color:var(--muted);font-size:12px;padding:14px 20px;line-height:1.7}
+  .legend b{color:var(--text)}
+  #alertlog{position:fixed;bottom:0;left:0;right:0;max-height:0;overflow:hidden;background:var(--panel);
+    border-top:1px solid var(--gold);transition:max-height .3s;padding:0 20px}
+  #alertlog.show{max-height:160px;padding:12px 20px;overflow:auto}
+  .alertline{font-size:12px;padding:3px 0;color:var(--gold)}
+</style>
+</head>
+<body>
+<header>
+  <div class="pulse" id="pulse"></div>
+  <div class="logo">Radar de <span>Funding</span></div>
+  <a class="chlink" href="https://t.me/radardeltabr" target="_blank" rel="noopener">📢 Canal grátis — top do dia + alertas</a>
+  <div class="status" id="status">iniciando…</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="scan">Oportunidades</div>
+  <div class="tab" data-tab="cross">Cross-Exchange</div>
+  <div class="tab" data-tab="agro">⚡ Modo Agressivo</div>
+</div>
+
+<div class="controls">
+  <div class="ctl"><label>Volume mín. 24h</label>
+    <select id="minvol">
+      <option value="5000000">$5M</option>
+      <option value="20000000" selected>$20M</option>
+      <option value="50000000">$50M</option>
+      <option value="100000000">$100M</option>
+    </select></div>
+  <div class="ctl"><label>APR mín. exibir</label>
+    <input id="minapr" type="number" value="10" step="5"></div>
+  <div class="ctl"><label>Buscar par</label>
+    <input id="search" type="text" placeholder="BTC, SOL…"></div>
+  <div class="ctl agro-ctl" style="display:none"><label>💰 Capital (R$)</label>
+    <input id="capital" type="number" value="2000" step="500"></div>
+  <div class="ctl agro-ctl" style="display:none"><label>Alavancagem</label>
+    <select id="lev"><option value="1" selected>1x (sem liq.)</option><option value="2">2x</option>
+    <option value="3">3x</option><option value="5">5x</option><option value="10">10x ☠️</option></select></div>
+  <div class="ctl agro-ctl" style="display:none"><label>Dias segurando</label>
+    <input id="dias" type="number" value="7" step="1"></div>
+  <div class="alertbox">
+    <div class="ctl"><label class="ttl">🔔 Alertar se APR ≥</label>
+      <input id="alertapr" type="number" value="100" step="25"></div>
+    <div class="ctl"><label>Som</label><input id="snd" type="checkbox" checked></div>
+    <button class="btn" id="enablealerts">Ativar alertas</button>
+    <button class="btn ghost" id="refreshnow">Atualizar</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <table>
+    <thead id="thead"></thead>
+    <tbody id="tbody"><tr><td class="empty" colspan="7">carregando dados ao vivo…</td></tr></tbody>
+  </table>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div id="alertlog"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let TAB = "scan", alerted = new Set(), timer = null, countdown = 60;
+
+// ---------- coleta ----------
+async function j(url){ const r = await fetch(url); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+async function getBinance(){
+  const [prem, t24, finfo] = await Promise.all([
+    j("https://fapi.binance.com/fapi/v1/premiumIndex"),
+    j("https://fapi.binance.com/fapi/v1/ticker/24hr"),
+    j("https://fapi.binance.com/fapi/v1/fundingInfo")
+  ]);
+  const vol = {}; t24.forEach(d => vol[d.symbol] = +d.quoteVolume);
+  const itv = {}; finfo.forEach(d => itv[d.symbol] = +d.fundingIntervalHours || 8);
+  return prem.filter(d=>d.symbol.endsWith("USDT")).map(d=>{
+    const h = itv[d.symbol]||8, r = +d.lastFundingRate;
+    return {ex:"binance", sym:d.symbol, rate:r, itv:h, apr:r*(24/h)*365*100, vol:vol[d.symbol]||0, mark:+d.markPrice};
+  });
+}
+async function getBybit(){
+  const d = await j("https://api.bybit.com/v5/market/tickers?category=linear");
+  return d.result.list.filter(x=>x.symbol.endsWith("USDT") && x.fundingRate).map(x=>{
+    const r = +x.fundingRate;
+    return {ex:"bybit", sym:x.symbol, rate:r, itv:8, apr:r*3*365*100, vol:+x.turnover24h||0, mark:+x.lastPrice};
+  });
+}
+
+let BIN = [], BYB = [];
+async function refresh(){
+  $("#pulse").style.background = "var(--gold)";
+  const res = await Promise.allSettled([getBinance(), getBybit()]);
+  let okB=false, okY=false;
+  if(res[0].status==="fulfilled"){ BIN = res[0].value; okB=true; }
+  if(res[1].status==="fulfilled"){ BYB = res[1].value; okY=true; }
+  const now = new Date().toLocaleTimeString("pt-BR");
+  $("#status").innerHTML =
+    `Binance ${okB?'<span class="pos">●</span> '+BIN.length:'<span class="neg">● off</span>'} &nbsp; `+
+    `Bybit ${okY?'<span class="pos">●</span> '+BYB.length:'<span class="neg">● off (precisa localhost)</span>'}<br>`+
+    `atualizado ${now} · próx. em <span id="cd">${countdown}</span>s`;
+  $("#pulse").style.background = "var(--green)";
+  render();
+  checkAlerts();
+}
+
+// ---------- render ----------
+function fmtVol(v){ return v>=1e9?`$${(v/1e9).toFixed(1)}B`:v>=1e6?`$${(v/1e6).toFixed(0)}M`:`$${(v/1e3).toFixed(0)}k`; }
+function beFee(row, fee=0.0029){ const daily=Math.abs(row.rate)*(24/row.itv); return daily>0?fee/daily:1e9; }
+
+function render(){
+  const minvol = +$("#minvol").value, minapr = +$("#minapr").value, q = $("#search").value.toUpperCase();
+  document.querySelectorAll(".agro-ctl").forEach(e=>e.style.display = TAB==="agro"?"flex":"none");
+  if(TAB==="scan") renderScan(minvol, minapr, q);
+  else if(TAB==="cross") renderCross(minvol, q);
+  else renderAgro(minvol, q);
+}
+
+function renderAgro(minvol, q){
+  const cap = +$("#capital").value, L = +$("#lev").value, D = +$("#dias").value, FEE = 0.0029;
+  $("#thead").innerHTML = `<tr><th class="l">par</th><th>APR atual</th><th>ganho ${D}d (1x)*</th>
+    <th>ganho ${D}d (${L}x)*</th><th>custo entra+sai</th><th>liquida se BTC subir</th><th>preço liq.</th></tr>`;
+  let rows = [...BIN, ...BYB].filter(r=>r.vol>=minvol && r.apr>0 && r.sym.includes(q));
+  rows.sort((a,b)=>b.apr-a.apr);
+  if(!rows.length){ $("#tbody").innerHTML = `<tr><td class="empty" colspan="7">nada acima do filtro</td></tr>`; return; }
+  $("#tbody").innerHTML = rows.slice(0,25).map(r=>{
+    const diario = r.rate*(24/r.itv);
+    const ganho1 = cap*(diario*D) - cap*FEE*2;
+    const ganhoL = cap*L*(diario*D) - cap*L*FEE*2;
+    const subaPct = L<=1 ? null : (1/L*100);          // short liquida se preço sobe ~1/L
+    const liqPrice = (r.mark && L>1) ? r.mark*(1+1/L) : null;
+    const liqTxt = L<=1 ? '<span class="pos">sem liq. (hedge)</span>'
+      : `<span class="neg">+${subaPct.toFixed(0)}%</span>`;
+    const liqP = liqPrice ? liqPrice.toLocaleString("en-US",{maximumFractionDigits:liqPrice<1?6:2}) : "—";
+    return `<tr>
+      <td class="l pair">${r.sym.replace("USDT","")} <span class="exch ${r.ex}">${r.ex}</span></td>
+      <td class="mono pos">+${r.apr.toFixed(0)}%</td>
+      <td class="mono ${ganho1>=0?'pos':'neg'}">R$ ${ganho1.toFixed(0)}</td>
+      <td class="mono apr ${ganhoL>=0?'pos':'neg'}">R$ ${ganhoL.toFixed(0)}</td>
+      <td class="mono" style="color:var(--muted)">R$ ${(cap*L*FEE*2).toFixed(2)}</td>
+      <td class="mono">${liqTxt}</td>
+      <td class="mono" style="color:var(--muted)">${liqP}</td></tr>`;
+  }).join("");
+  $("#legend").innerHTML = `⚡ <b>Modo Agressivo:</b> capital R$${cap.toLocaleString("pt-BR")}, segurando ${D} dias. `+
+    `<b>* ganho SE o funding de agora persistir</b> — na vida real ele DECAI em horas; capture o pico e saia. `+
+    `<b>1x = delta-neutro puro: não liquida</b> (spot cobre o short). Alavancar ${L}x multiplica o ganho MAS `+
+    `liquida o short se o preço subir ~${L>1?(100/L).toFixed(0):'—'}% — e aí seu hedge quebra e você vira direcional. `+
+    `<b class="neg">Nunca alavanca com margem isolada sem folga.</b>`;
+}
+
+function renderScan(minvol, minapr, q){
+  $("#thead").innerHTML = `<tr><th class="l">#</th><th class="l">corretora</th><th class="l">par</th>
+    <th>funding</th><th>APR anual</th><th>break-even</th><th>vol 24h</th></tr>`;
+  let rows = [...BIN, ...BYB].filter(r=>r.vol>=minvol && Math.abs(r.apr)>=minapr && r.sym.includes(q));
+  rows.sort((a,b)=>b.apr-a.apr);
+  if(!rows.length){ $("#tbody").innerHTML = `<tr><td class="empty" colspan="7">nada acima dos filtros agora</td></tr>`; return; }
+  $("#tbody").innerHTML = rows.slice(0,60).map((r,i)=>{
+    const be = beFee(r), bes = be<365?`${be.toFixed(1)}d`:">1ano";
+    const hot = r.apr>=+$("#alertapr").value;
+    return `<tr data-sym="${r.ex}:${r.sym}">
+      <td class="l rank">${i+1}</td>
+      <td class="l"><span class="exch ${r.ex}">${r.ex}</span></td>
+      <td class="l pair">${r.sym.replace("USDT","")}<span style="color:var(--muted)">/USDT</span></td>
+      <td class="mono ${r.rate>=0?'pos':'neg'}">${(r.rate*100).toFixed(4)}%</td>
+      <td class="mono apr ${r.apr>=0?'pos':'neg'} ${hot?'hot':''}">${r.apr>=0?'+':''}${r.apr.toFixed(0)}%</td>
+      <td class="mono ${be<5?'be-fast':'be-slow'}">${bes}</td>
+      <td class="mono" style="color:var(--muted)">${fmtVol(r.vol)}</td></tr>`;
+  }).join("");
+  $("#legend").innerHTML = `<b>APR anual</b> = funding anualizado pelo intervalo real de cada par. `+
+    `<b>break-even</b> = dias segurando até o funding cobrir ~0,29% de entrada+saída (verde = paga rápido). `+
+    `<b class="hot">laranja</b> = acima do teu limiar de alerta. Binance usa intervalo real; Bybit assume 8h.`;
+}
+
+function renderCross(minvol, q){
+  $("#thead").innerHTML = `<tr><th class="l">par</th><th>Binance APR</th><th>Bybit APR</th>
+    <th>spread</th><th class="l">jogada (delta-neutro, 2 perps)</th></tr>`;
+  const by = {}; BYB.forEach(r=>by[r.sym]=r);
+  let rows = [];
+  BIN.forEach(b=>{ const y=by[b.sym]; if(y && b.vol>=minvol && y.vol>=minvol && b.sym.includes(q))
+    rows.push({sym:b.sym, bi:b.apr, by:y.apr, sp:b.apr-y.apr}); });
+  rows.sort((a,b)=>Math.abs(b.sp)-Math.abs(a.sp));
+  if(!rows.length){ $("#tbody").innerHTML = `<tr><td class="empty" colspan="5">sem pares em comum acima do filtro</td></tr>`; return; }
+  $("#tbody").innerHTML = rows.slice(0,40).map(r=>{
+    const jog = r.bi>r.by ? "short Binance · long Bybit" : "short Bybit · long Binance";
+    return `<tr>
+      <td class="l pair">${r.sym.replace("USDT","")}<span style="color:var(--muted)">/USDT</span></td>
+      <td class="mono ${r.bi>=0?'pos':'neg'}">${r.bi>=0?'+':''}${r.bi.toFixed(0)}%</td>
+      <td class="mono ${r.by>=0?'pos':'neg'}">${r.by>=0?'+':''}${r.by.toFixed(0)}%</td>
+      <td class="mono apr" style="color:var(--gold)">${r.sp>=0?'+':''}${r.sp.toFixed(0)}%</td>
+      <td class="l" style="color:var(--muted)">${jog}</td></tr>`;
+  }).join("");
+  $("#legend").innerHTML = `<b>Cross-exchange:</b> short o perp que paga mais + long o que paga menos. `+
+    `Dois perpétuos se anulam (delta-neutro puro). Captura a diferença. Custo ~0,18% round-trip (maker). `+
+    `Risco: margem nas duas corretoras, liquidação independente.`;
+}
+
+// ---------- alertas ----------
+function beep(){
+  if(!$("#snd").checked) return;
+  try{ const a=new (window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(), g=a.createGain();
+    o.connect(g); g.connect(a.destination); o.frequency.value=880; o.type="sine";
+    g.gain.setValueAtTime(.001,a.currentTime); g.gain.exponentialRampToValueAtTime(.3,a.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.4); o.start(); o.stop(a.currentTime+.4);
+  }catch(e){}
+}
+function checkAlerts(){
+  const thr = +$("#alertapr").value;
+  const hits = [...BIN,...BYB].filter(r=>r.apr>=thr && r.vol>=+$("#minvol").value);
+  let novos = [];
+  hits.forEach(r=>{ const id=r.ex+":"+r.sym; if(!alerted.has(id)){ alerted.add(id); novos.push(r); }});
+  // esquece quem caiu abaixo, pra re-alertar se voltar
+  alerted.forEach(id=>{ if(!hits.find(r=>(r.ex+":"+r.sym)===id)) alerted.delete(id); });
+  if(novos.length){
+    beep();
+    const log=$("#alertlog"); log.classList.add("show");
+    novos.forEach(r=>{
+      const line=`⚡ ${new Date().toLocaleTimeString("pt-BR")} — ${r.sym.replace("USDT","")} em ${r.ex}: APR ${r.apr.toFixed(0)}% (funding ${(r.rate*100).toFixed(3)}%)`;
+      const div=document.createElement("div"); div.className="alertline"; div.textContent=line;
+      log.prepend(div);
+      if(window.Notification && Notification.permission==="granted")
+        new Notification("Radar de Funding ⚡", {body:`${r.sym.replace("USDT","")} em ${r.ex}: APR ${r.apr.toFixed(0)}%`});
+    });
+    document.querySelectorAll('tr[data-sym]').forEach(tr=>{
+      if(novos.find(r=>(r.ex+":"+r.sym)===tr.dataset.sym)) tr.classList.add("flash");
+    });
+  }
+}
+
+// ---------- UI ----------
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); TAB=t.dataset.tab; render();
+});
+["minvol","minapr","search","alertapr","capital","lev","dias"].forEach(id=>$("#"+id).addEventListener("input",render));
+$("#refreshnow").onclick=()=>{ countdown=60; refresh(); };
+$("#enablealerts").onclick=()=>{
+  if(window.Notification) Notification.requestPermission();
+  $("#enablealerts").textContent="Alertas ativos ✓"; $("#enablealerts").style.background="var(--green)";
+};
+
+// ---------- loop ----------
+refresh();
+setInterval(()=>{ countdown--; if($("#cd")) $("#cd").textContent=countdown;
+  if(countdown<=0){ countdown=60; refresh(); } },1000);
+</script>
+</body>
+</html>
