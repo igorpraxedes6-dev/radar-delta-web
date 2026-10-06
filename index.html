@@ -69,6 +69,12 @@
   .flash{animation:fl 1.2s ease-out}
   @keyframes fl{0%{background:rgba(227,179,65,.25)}100%{background:transparent}}
   .empty{text-align:center;color:var(--muted);padding:40px}
+  .sig{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);
+    color:var(--muted);margin:1px 3px 1px 0;border:1px solid var(--border);white-space:nowrap}
+  .sig.hot{color:var(--hot);border-color:var(--hot)}
+  .sig.pos{color:var(--green);border-color:var(--green)}
+  .sig.neg{color:var(--red);border-color:var(--red)}
+  .sig.quiet{opacity:.4;border:none}
   .legend{color:var(--muted);font-size:12px;padding:14px 20px;line-height:1.7}
   .legend b{color:var(--text)}
   #alertlog{position:fixed;bottom:0;left:0;right:0;max-height:0;overflow:hidden;background:var(--panel);
@@ -97,6 +103,7 @@
   <div class="tab active" data-tab="scan">Oportunidades</div>
   <div class="tab" data-tab="cross">Cross-Exchange</div>
   <div class="tab" data-tab="agro">⚡ Modo Agressivo</div>
+  <div class="tab" data-tab="sinais">📡 Sinais</div>
 </div>
 
 <div class="controls">
@@ -161,7 +168,7 @@ async function getBybit(){
   const d = await j("https://api.bybit.com/v5/market/tickers?category=linear");
   return d.result.list.filter(x=>x.symbol.endsWith("USDT") && x.fundingRate).map(x=>{
     const r = +x.fundingRate;
-    return {ex:"bybit", sym:x.symbol, rate:r, itv:8, apr:r*3*365*100, vol:+x.turnover24h||0, mark:+x.lastPrice};
+    return {ex:"bybit", sym:x.symbol, rate:r, itv:8, apr:r*3*365*100, vol:+x.turnover24h||0, mark:+x.lastPrice, oi:+x.openInterestValue||0, chg:(+x.price24hPcnt||0)*100};
   });
 }
 
@@ -191,7 +198,35 @@ function render(){
   document.querySelectorAll(".agro-ctl").forEach(e=>e.style.display = TAB==="agro"?"flex":"none");
   if(TAB==="scan") renderScan(minvol, minapr, q);
   else if(TAB==="cross") renderCross(minvol, q);
-  else renderAgro(minvol, q);
+  else if(TAB==="agro") renderAgro(minvol, q);
+  else renderSinais(minvol, q);
+}
+
+function renderSinais(minvol, q){
+  $("#thead").innerHTML = `<tr><th class="l">par</th><th>funding</th><th>open interest</th>
+    <th>vol 24h</th><th>Δ 24h</th><th class="l">leitura (dado, não previsão)</th></tr>`;
+  let rows = BYB.filter(r=>r.vol>=minvol && r.sym.includes(q)).map(r=>{
+    const s=[]; let w=0;
+    if(r.apr>=50 && r.oi>=50e6){ s.push('<span class="sig hot">alavancagem lotada</span>'); w+=4; }
+    if(r.apr<0){ s.push('<span class="sig neg">funding negativo (shorts pagam)</span>'); w+=2; }
+    if(r.chg>=10){ s.push('<span class="sig pos">subiu forte 24h</span>'); w+=1; }
+    if(r.chg<=-10){ s.push('<span class="sig neg">caiu forte 24h</span>'); w+=1; }
+    if(r.vol>0 && r.oi>0 && r.vol/r.oi>=3){ s.push('<span class="sig">volume anormal</span>'); w+=1; }
+    if(!s.length) s.push('<span class="sig quiet">—</span>');
+    return Object.assign({}, r, {s, w});
+  });
+  rows.sort((a,b)=> b.w - a.w || b.oi - a.oi);   // com sinal primeiro, depois onde a alavancagem mora
+  if(!rows.length){ $("#tbody").innerHTML = `<tr><td class="empty" colspan="6">sem dados</td></tr>`; return; }
+  $("#tbody").innerHTML = rows.slice(0,40).map(r=>`<tr>
+      <td class="l pair">${r.sym.replace("USDT","")}<span style="color:var(--muted)">/USDT</span></td>
+      <td class="mono ${r.apr>=0?'pos':'neg'}">${r.apr>=0?'+':''}${r.apr.toFixed(0)}%</td>
+      <td class="mono" style="color:var(--muted)">${fmtVol(r.oi)}</td>
+      <td class="mono" style="color:var(--muted)">${fmtVol(r.vol)}</td>
+      <td class="mono ${r.chg>=0?'pos':'neg'}">${r.chg>=0?'+':''}${r.chg.toFixed(1)}%</td>
+      <td class="l">${r.s.join(' ')}</td></tr>`).join("");
+  $("#legend").innerHTML = `📡 <b>Sinais = leitura do DADO</b> (funding, open interest, volume, variação 24h), `+
+    `ranqueado por onde a alavancagem está concentrada. <b class="neg">NÃO é previsão de que vai subir</b> — `+
+    `é onde o risco e a atenção moram. <b>Alavancagem lotada</b> = funding + OI altos = risco de squeeze. Fonte: Bybit.`;
 }
 
 function renderAgro(minvol, q){
