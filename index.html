@@ -47,6 +47,8 @@
     padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
   .sharebtn:hover{border-color:var(--green);color:var(--green)}
   .sharebtn.ok{border-color:var(--green);color:var(--green)}
+  .sharebtn.xbtn{background:#000;border-color:#2a2a2a;color:#fff;text-decoration:none}
+  .sharebtn.xbtn:hover{border-color:#fff;color:#fff}
   .partnerbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 20px;
     background:var(--panel2);border-bottom:1px solid var(--border);font-size:13px}
   .partnerbar .plabel{color:var(--muted)}
@@ -111,6 +113,7 @@
   <div class="logo">Radar de <span>Funding</span></div>
   <a class="chlink" href="https://t.me/radardeltabr" target="_blank" rel="noopener">📢 Canal grátis — top do dia + alertas</a>
   <button class="sharebtn" id="sharebtn" onclick="shareRadar()">🔗 Compartilhar</button>
+  <a class="sharebtn xbtn" href="https://x.com/intent/tweet" target="_blank" rel="noopener" onclick="return tweetThis(this)">𝕏 Postar</a>
   <div class="status" id="status">iniciando…</div>
 </header>
 
@@ -186,6 +189,16 @@ function shareRadar(){
     .then(()=>{ btn.textContent="✅ Copiado!"; btn.classList.add("ok");
       setTimeout(()=>{ btn.textContent="🔗 Compartilhar"; btn.classList.remove("ok"); },2200); })
     .catch(()=>{ window.prompt("Copie e mande pra quem opera perp:", full); });
+}
+// ---------- postar no X com 1 toque (texto pronto) ----------
+function tweetThis(el){
+  const url = "https://igorpraxedes6-dev.github.io/radar-delta-web/";
+  const txt = "📡 Radar Delta — funding rates ao vivo, Binance + Bybit lado a lado. "
+    + "Grátis, sem cadastro. Dado, não recomendação.";
+  const tags = "funding,fundingrate,cripto";
+  el.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(txt)
+    + "&url=" + encodeURIComponent(url) + "&hashtags=" + encodeURIComponent(tags);
+  return true;
 }
 
 // ---------- coleta ----------
