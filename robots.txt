@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://igorpraxedes6-dev.github.io/radar-delta-web/sitemap.xml
