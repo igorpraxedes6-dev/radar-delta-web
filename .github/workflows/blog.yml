@@ -1,0 +1,23 @@
+name: Funding Diary - post diario do blog
+on:
+  schedule:
+    - cron: '0 12 * * *'   # todo dia 12:00 UTC (9h BRT)
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Gerar post do dia
+        run: python3 blog.py
+      - name: Commitar se mudou
+        run: |
+          git config user.name "Radar Delta bot"
+          git config user.email "actions@github.com"
+          git add blog/
+          git diff --staged --quiet || git commit -m "Funding Diary: post de $(date -u +%Y-%m-%d)"
+          git push
