@@ -25,6 +25,15 @@
   .chlink{margin-left:16px;background:var(--accent);color:#fff;text-decoration:none;padding:6px 12px;
     border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
   .chlink:hover{filter:brightness(1.12)}
+  .partnerbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 20px;
+    background:var(--panel2);border-bottom:1px solid var(--border);font-size:13px}
+  .partnerbar .plabel{color:var(--muted)}
+  .partnerbar .pbtn{text-decoration:none;color:#121212;font-weight:700;font-size:12.5px;
+    padding:5px 13px;border-radius:7px}
+  .partnerbar .pbtn.bnc{background:#f0b90b}
+  .partnerbar .pbtn.byb{background:#f7a600}
+  .partnerbar .pbtn:hover{filter:brightness(1.08)}
+  .partnerbar .pdisc{color:var(--faint);font-size:11.5px}
   .tabs{display:flex;gap:4px;padding:10px 20px 0}
   .tab{padding:8px 16px;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;
     background:var(--panel2);color:var(--muted);cursor:pointer;font-size:13px}
@@ -75,6 +84,14 @@
   <a class="chlink" href="https://t.me/radardeltabr" target="_blank" rel="noopener">📢 Canal grátis — top do dia + alertas</a>
   <div class="status" id="status">iniciando…</div>
 </header>
+
+<!-- BARRA DE AFILIADO — troque os href pelos SEUS links de afiliado (Binance/Bybit) -->
+<div class="partnerbar">
+  <span class="plabel">💱 Operar funding? Abra conta:</span>
+  <a class="pbtn bnc" href="https://www.binance.com/activity/referral" target="_blank" rel="noopener sponsored">Binance</a>
+  <a class="pbtn byb" href="https://www.bybit.com/invite" target="_blank" rel="noopener sponsored">Bybit</a>
+  <span class="pdisc">· links de parceiro</span>
+</div>
 
 <div class="tabs">
   <div class="tab active" data-tab="scan">Oportunidades</div>
