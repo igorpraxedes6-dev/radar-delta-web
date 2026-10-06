@@ -22,7 +22,7 @@ CHAN = "https://t.me/radardeltabr"
 OGIMG = BASE + "/cards/card.png"
 CWD  = os.getcwd()
 # trocar pelos links REAIS de afiliado (ponto unico aqui + no radar-painel.html)
-AFF_BNC = "https://www.binance.com/activity/referral"
+AFF_BNC = "https://www.binance.com/activity/referral-entry/CPA?ref=CPA_00DDWW0Y3L"
 AFF_BYB = "https://www.bybit.com/invite"
 
 # moedas-major que a galera realmente pesquisa (nao alt obscura = evita conteudo fino)
